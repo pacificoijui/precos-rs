@@ -58,7 +58,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - name: Estado atual (ramo dados)
-        run: git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || echo "Sem estado ainda: primeira carga."
+        run: |
+          git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || echo "Sem estado ainda: primeira carga."
       - name: Há trabalho?
         id: p
         run: |
@@ -83,7 +84,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || true
+      - run: |
+          git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || true
       - name: Listar modalidade ${{ matrix.mod }}
         run: node robo/listar.mjs
         env:
@@ -112,7 +114,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || true
+      - run: |
+          git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || true
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
@@ -144,7 +147,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || true
+      - run: |
+          git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || true
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
