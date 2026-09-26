@@ -4,7 +4,7 @@ name: Robô — preços dos municípios do RS
 # (últimos 24 meses) que a Pesquisa de Preços de Ijuí lê.
 #
 #   listar   — uma máquina por modalidade: descobre o que é novo ou mudou
-#   baixar   — 8 máquinas em paralelo (cada uma com o seu endereço; o limite
+#   baixar   — 16 máquinas em paralelo (cada uma com o seu endereço; o limite
 #              de requisições do PNCP é por endereço) baixam itens e resultados
 #   publicar — junta tudo, tira o que passou de 24 meses, monta a base e
 #              grava no ramo "dados" (sempre um commit só: o histórico não
@@ -34,7 +34,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  PARTES: 8
+  PARTES: 16
 
 jobs:
   teste:
@@ -109,7 +109,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        parte: [0, 1, 2, 3, 4, 5, 6, 7]
+        parte: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

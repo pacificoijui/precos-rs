@@ -15,8 +15,8 @@ O robô (`.github/workflows/robo.yml`) roda todo dia às 04:15 (Brasília):
 
 1. **listar** (uma máquina por modalidade): pergunta ao PNCP o que é novo ou
    mudou. Na carga inicial, lê os 24 meses mês a mês.
-2. **baixar** (8 máquinas em paralelo): itens e resultados de cada
-   contratação da fila. O PNCP limita requisições por endereço; com 8
+2. **baixar** (16 máquinas em paralelo): itens e resultados de cada
+   contratação da fila. O PNCP limita requisições por endereço; com 16
    máquinas a carga inicial termina em poucas rodadas (a cada 4 h enquanto
    houver fila).
 3. **publicar**: junta tudo, **tira o que passou de 24 meses** e monta a
