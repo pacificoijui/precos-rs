@@ -27,13 +27,18 @@ O robô (`.github/workflows/robo.yml`) roda todo dia às 04:15 (Brasília):
 
 | | |
 |---|---|
-| `web/meta.json` | resumo: total de preços, municípios, período, unidades, fila pendente |
-| `web/b/N.json.gz` | blocos de ~2.000 preços em ordem de descrição |
-| `web/i/XX.json.gz` | índice: palavra → blocos onde aparece (por prefixo de 2 letras) |
+| `web/meta.json` | resumo: total de preços, municípios, período, unidades, fila pendente, arquivos do índice |
+| `web/b/N.json.gz` | blocos de ~1.000 preços em ordem de descrição |
+| `web/i/XXX.json.gz` | índice: palavra → `[bloco, quantos preços do bloco têm a palavra, …]` (por prefixo de 3 letras; palavra de 2 letras no arquivo de 2) |
 | `estado/` | o que o robô precisa para continuar (contratações baixadas, fila, cursor) |
 
 A tela lê direto de `https://raw.githubusercontent.com/pacificoijui/precos-rs/dados/web/`:
-primeiro o índice das palavras buscadas, depois só os blocos que as contêm.
+primeiro o índice das palavras buscadas, depois só os blocos que as contêm —
+começando pelos que têm mais preços do item buscado, que já aparecem na tela
+enquanto o resto chega.
+
+Mudou o código do robô? O push remonta `web/` a partir do estado, sem baixar
+nada do PNCP (o mesmo que Actions › Run workflow › "Só remontar a base").
 
 Linha de um bloco: `[id, descrição, unidade, valor unitário, quantidade, data, processo, fornecedor]`,
 com `processo` = `[cnpj do órgão, ano, sequencial, modalidade, número, município, órgão]` e

@@ -8,10 +8,17 @@
 //   cursor.json     até onde cada modalidade já foi listada
 // web/     (o que o navegador lê, direto do GitHub)
 //   meta.json       resumo: total, período, municípios, unidades, blocos
-//   b/N.json.gz     blocos de ~2.000 preços, em ordem de descrição (itens
+//   b/N.json.gz     blocos de ~1.000 preços, em ordem de descrição (itens
 //                   parecidos ficam juntos: uma busca abre poucos blocos)
-//   i/XX.json.gz    índice: palavra -> blocos em que aparece, repartido
-//                   pelas duas primeiras letras da palavra
+//   i/XXX.json.gz   índice, repartido pelas três primeiras letras da palavra
+//                   (palavra de duas letras: arquivo de duas). Para cada
+//                   palavra, as linhas da base em que ela aparece (a
+//                   primeira, depois a distância para a anterior): a tela
+//                   cruza as palavras buscadas, sabe exatamente que blocos
+//                   têm o item e quantos preços cada um tem, e baixa só
+//                   esses, do que mais tem para o que menos tem. Palavra
+//                   comum demais (mais de LIMITE_LINHAS linhas) guarda só
+//                   {b: [bloco, quantas linhas, ...]}, que é bem menor.
 import { join } from "node:path";
 import { rmSync, existsSync } from "node:fs";
 import {
@@ -21,14 +28,33 @@ import {
 
 const RAIZ = process.env.RAIZ || ".";
 const PARTES_ESTADO = 16;
-const POR_BLOCO = +process.env.POR_BLOCO || 2000;
+const POR_BLOCO = +process.env.POR_BLOCO || 1000;
+const LIMITE_LINHAS = +process.env.LIMITE_LINHAS || 100000;
+// Versão do formato de web/ (a tela lê as duas: a 1 tinha índice por duas
+// letras e só a lista de blocos de cada palavra)
+const FORMATO = 2;
+
+// Linhas de uma palavra no índice: a primeira e as distâncias (números
+// pequenos, que comprimem bem); comum demais, só os blocos e as contagens.
+export function codificarLinhas(linhas, porBloco, limite = LIMITE_LINHAS) {
+  if (linhas.length > limite) {
+    const b = [];
+    for (const i of linhas) {
+      const n = Math.floor(i / porBloco);
+      if (b[b.length - 2] !== n) b.push(n, 0);
+      b[b.length - 1]++;
+    }
+    return { b };
+  }
+  return linhas.map((x, k) => (k ? x - linhas[k - 1] : x));
+}
 // Palavras que não ajudam a achar nada (aparecem em quase tudo)
 const VAZIAS = new Set("de da do das dos e em para com sem por a o as os na no nas nos ao aos ou um uma tipo cor".split(" "));
 
 export function palavras(texto) {
   return norm(texto).split(/[^a-z0-9]+/).filter((p) => p.length >= 2 && !VAZIAS.has(p));
 }
-const arqIndice = (p) => p.slice(0, 2);
+export const arqIndice = (p) => p.slice(0, 3);
 
 // Data de referência de uma contratação: o resultado mais recente
 function dataRef(r) {
@@ -67,7 +93,7 @@ export function juntarEstado(raiz, hoje = hojeISO()) {
   return { base, fila, cursor, vistos, corte, novos, podados };
 }
 
-export function montarWeb(base, { corte, hoje = hojeISO(), fila = 0, cursor = {} } = {}) {
+export function montarWeb(base, { corte, hoje = hojeISO(), fila = 0, cursor = {}, porBloco = POR_BLOCO, limiteLinhas = LIMITE_LINHAS } = {}) {
   const precos = [];
   for (const r of base.values()) {
     for (const [n, desc, un, tipo, qtdItem, res] of r.it || []) {
@@ -86,8 +112,8 @@ export function montarWeb(base, { corte, hoje = hojeISO(), fila = 0, cursor = {}
   const idxUn = new Map(unidades.map((u, i) => [u, i]));
 
   const blocos = [], indice = new Map();
-  for (let b = 0; b * POR_BLOCO < precos.length; b++) {
-    const fatia = precos.slice(b * POR_BLOCO, (b + 1) * POR_BLOCO);
+  for (let b = 0; b * porBloco < precos.length; b++) {
+    const fatia = precos.slice(b * porBloco, (b + 1) * porBloco);
     const procs = [], idxP = new Map(), forns = [], idxF = new Map();
     const linhas = fatia.map((p) => {
       let pi = idxP.get(p.r.c);
@@ -98,26 +124,31 @@ export function montarWeb(base, { corte, hoje = hojeISO(), fila = 0, cursor = {}
       const fk = p.forn + "|" + p.doc;
       let fi = idxF.get(fk);
       if (fi === undefined) { fi = forns.length; idxF.set(fk, fi); forns.push([p.forn, p.doc]); }
-      for (const w of palavras(p.desc)) {
-        let s = indice.get(w); if (!s) indice.set(w, (s = new Set()));
-        s.add(b);
-      }
       return [p.id, p.desc, idxUn.get(p.un), p.v, p.q, p.d, pi, fi];
     });
     blocos.push({ p: procs, f: forns, r: linhas });
   }
-  // índice repartido por prefixo; palavra que está em mais da metade dos
-  // blocos não filtra nada: vira "*" (a tela a trata como "qualquer bloco")
+  // índice: palavra -> linhas (em ordem), repartido por prefixo
+  precos.forEach((p, i) => {
+    for (const w of new Set(palavras(p.desc))) {
+      let a = indice.get(w); if (!a) indice.set(w, (a = []));
+      a.push(i);
+    }
+  });
   const porPrefixo = new Map();
-  for (const [w, s] of indice) {
+  for (const [w, linhas] of indice) {
     const k = arqIndice(w);
-    let m = porPrefixo.get(k); if (!m) porPrefixo.set(k, (m = {}));
-    m[w] = s.size > blocos.length / 2 ? "*" : [...s].sort((a, b) => a - b);
+    let arq = porPrefixo.get(k); if (!arq) porPrefixo.set(k, (arq = {}));
+    arq[w] = codificarLinhas(linhas, porBloco, limiteLinhas);
   }
+  // quais arquivos de índice existem, agrupados pelas duas primeiras letras:
+  // {"ar": ".rmo"} = i/ar, i/arr, i/arm, i/aro ("." = o de duas letras)
+  const prefixos = {};
+  for (const k of [...porPrefixo.keys()].sort()) prefixos[k.slice(0, 2)] = (prefixos[k.slice(0, 2)] || "") + (k[2] || ".");
   const meta = {
-    geradoEm: new Date().toISOString(), hoje, uf: UF, meses: MESES, de: corte,
-    precos: precos.length, contratacoes: base.size, blocos: blocos.length, pendentes: fila,
-    municipios, unidades, modalidades: MODALIDADES, prefixos: [...porPrefixo.keys()].sort(),
+    formato: FORMATO, geradoEm: new Date().toISOString(), hoje, uf: UF, meses: MESES, de: corte,
+    precos: precos.length, contratacoes: base.size, blocos: blocos.length, porBloco, pendentes: fila,
+    municipios, unidades, modalidades: MODALIDADES, prefixos,
     carga: Object.fromEntries(Object.entries(cursor.carga || {}).map(([m, c]) => [m, !!c.feita])),
   };
   return { meta, blocos, porPrefixo };

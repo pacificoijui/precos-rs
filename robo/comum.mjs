@@ -175,7 +175,10 @@ const UNIDADES = {
   bobina: "bobina", cartela: "cartela", folha: "folha", folhas: "folha", fl: "folha", bloco: "bloco", galao5l: "galão",
 };
 export function normUnidade(u) {
-  const limpo = String(u || "").toLowerCase().replace(/\bnao usar\b/g, "").replace(/\s+/g, " ").trim();
+  let limpo = String(u || "").toLowerCase().replace(/\bnao usar\b/g, "").replace(/\s+/g, " ").trim();
+  // a sigla entre parênteses repete a unidade: "Ampola (amp)", "KG (kg)"
+  const semSigla = limpo.replace(/\s*\([^()]*\)\s*$/, "");
+  if (semSigla) limpo = semSigla;
   const k = norm(limpo).replace(/[^a-z0-9]/g, "");
   return UNIDADES[k] || limpo || "unidade";
 }

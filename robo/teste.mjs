@@ -15,6 +15,8 @@ const hoje = hojeISO();
 console.log("1) Normalizações");
 t("unidades: KG, Quilo e Quilogramas viram quilograma", ["KG", "Quilo", "Quilogramas"].every((u) => normUnidade(u) === "quilograma"));
 t("UN, Und e Unidade viram unidade", ["UN", "Und", "Unidade"].every((u) => normUnidade(u) === "unidade"));
+t("a sigla entre parênteses sai: 'Ampola (amp)', 'KG (kg)', 'Unidade (UN)'", normUnidade("Ampola (amp)") === "ampola" && normUnidade("KG (kg)") === "quilograma" && normUnidade("Unidade (UN)") === "unidade");
+t("unidade que é só parênteses fica como está", normUnidade("(40)") === "(40)");
 t("CPF de pessoa física sai mascarado", mascararDoc("12345678901") === "***.456.789-**");
 t("CNPJ fica inteiro", mascararDoc("12.345.678/0001-90") === "12345678000190");
 t("nome de MEI perde o CPF colado", limparNome("FABIO DA LUZ PEREIRA 94907382049") === "FABIO DA LUZ PEREIRA");
@@ -77,8 +79,20 @@ try {
   t("vistos guarda a data de atualização baixada", j.vistos["111-1-000001/2026"] === e.at);
   const w = montarWeb(j.base, { corte: j.corte, hoje, fila: j.fila.size });
   t("meta: 3 preços, 2 municípios, pendentes = fila", w.meta.precos === 3 && w.meta.municipios.length === 2 && w.meta.pendentes === 2, w.meta);
-  const idxAr = w.porPrefixo.get("ar");
-  t("índice: 'arroz' aponta para o bloco", idxAr && (idxAr.arroz === "*" || idxAr.arroz.includes(0)));
+  const idxAr = w.porPrefixo.get("arr");
+  t("índice por três letras: 'arroz' está em i/arr", idxAr && idxAr.arroz && !w.porPrefixo.has("ar"));
+  t("índice: 'arroz' dá as linhas em que aparece (primeira e distâncias)", JSON.stringify(idxAr.arroz) === "[0,1,1]", idxAr.arroz);
+  t("meta: formato 2 e a lista de arquivos do índice agrupada", w.meta.formato === 2 && /r/.test(w.meta.prefixos.ar) && !/\./.test(w.meta.prefixos.ar), w.meta.prefixos);
+  const it = (n, d) => [n, d, "UN", "M", 1, [["F", "1", 1, 10 + n, hoje], ["G", "2", 1, 11 + n, hoje]]];
+  const pc = montarWeb(new Map([["x", { c: "x", o: "1", a: 2026, s: 1, mod: 6, num: "1", mun: "Nova",
+    it: [it(1, "Papel A4 75g"), it(2, "Papel A4 90g"), it(3, "Caneta azul"), it(4, "Caneta preta"), it(5, "Clips")] }]]), { corte: j.corte, hoje, porBloco: 2 });
+  t("blocos do tamanho pedido, em ordem de descrição", pc.blocos.length === 5 && pc.blocos[0].r.every((r) => /Caneta azul/.test(r[1])), pc.blocos.map((b) => b.r.map((r) => r[1])));
+  t("índice com as linhas: 'papel' = linhas 6, 7, 8 e 9", JSON.stringify(pc.porPrefixo.get("pap").papel) === "[6,1,1,1]", pc.porPrefixo.get("pap"));
+  t("palavra de duas letras fica no arquivo de duas ('a4' em i/a4)", JSON.stringify(pc.porPrefixo.get("a4").a4) === "[6,1,1,1]" && pc.meta.prefixos.a4 === ".", pc.meta.prefixos);
+  t("meta diz quantos preços por bloco", pc.meta.porBloco === 2);
+  const comum = montarWeb(new Map([["x", { c: "x", o: "1", a: 2026, s: 1, mod: 6, num: "1", mun: "Nova",
+    it: [it(1, "Papel A4 75g"), it(2, "Papel A4 90g"), it(3, "Caneta azul"), it(4, "Caneta preta"), it(5, "Clips")] }]]), { corte: j.corte, hoje, porBloco: 2, limiteLinhas: 3 });
+  t("palavra comum demais guarda só blocos e contagens", JSON.stringify(comum.porPrefixo.get("pap").papel) === JSON.stringify({ b: [3, 2, 4, 2] }) && JSON.stringify(comum.porPrefixo.get("cli").clips) === "[4,1]", [comum.porPrefixo.get("pap"), comum.porPrefixo.get("cli")]);
   const linha = w.blocos[0].r[0], proc = w.blocos[0].p[linha[6]];
   t("linha do bloco: id, descrição, unidade, valor, data, processo e fornecedor", typeof linha[0] === "number" && linha[1] && w.meta.unidades[linha[2]] && linha[3] > 0 && /^\d{4}-\d\d-\d\d$/.test(linha[5]) && proc.length === 7 && w.blocos[0].f[linha[7]]);
   t("ordem por descrição (itens parecidos juntos)", w.blocos[0].r.map((x) => x[1].toLowerCase()).join("|") === w.blocos[0].r.map((x) => x[1].toLowerCase()).sort().join("|"));

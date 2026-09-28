@@ -12,6 +12,9 @@ name: Robô — preços dos municípios do RS
 #
 # A carga inicial não cabe numa rodada: o que faltar fica na fila e a rodada
 # seguinte (a cada 4 h enquanto houver fila) continua de onde parou.
+#
+# Mudança no código do robô (push) ou "só publicar" na mão: não baixa nada
+# do PNCP, só remonta web/ a partir do estado guardado (poucos minutos).
 on:
   schedule:
     - cron: "15 7 * * *"      # todo dia, 04:15 em Brasília
@@ -22,6 +25,10 @@ on:
         description: "Minutos de trabalho de cada máquina que baixa"
         type: number
         default: 300
+      so_publicar:
+        description: "Só remontar a base a partir do estado (sem baixar do PNCP)"
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths: ["robo/**", ".github/workflows/robo.yml"]
@@ -48,11 +55,11 @@ jobs:
 
   preparar:
     needs: teste
-    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
       pular: ${{ steps.p.outputs.pular }}
+      so_publicar: ${{ (github.event_name == 'push' || inputs.so_publicar) && '1' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -73,7 +80,7 @@ jobs:
 
   listar:
     needs: preparar
-    if: needs.preparar.outputs.pular != '1'
+    if: needs.preparar.outputs.pular != '1' && needs.preparar.outputs.so_publicar != '1'
     runs-on: ubuntu-latest
     timeout-minutes: 150
     strategy:
@@ -103,7 +110,7 @@ jobs:
 
   baixar:
     needs: [preparar, listar]
-    if: always() && needs.preparar.outputs.pular != '1' && needs.preparar.result == 'success'
+    if: always() && needs.preparar.outputs.pular != '1' && needs.preparar.outputs.so_publicar != '1' && needs.preparar.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 340
     strategy:
