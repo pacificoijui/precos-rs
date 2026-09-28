@@ -90,6 +90,10 @@ try {
   t("índice com as linhas: 'papel' = linhas 6, 7, 8 e 9", JSON.stringify(pc.porPrefixo.get("pap").papel) === "[6,1,1,1]", pc.porPrefixo.get("pap"));
   t("palavra de duas letras fica no arquivo de duas ('a4' em i/a4)", JSON.stringify(pc.porPrefixo.get("a4").a4) === "[6,1,1,1]" && pc.meta.prefixos.a4 === ".", pc.meta.prefixos);
   t("meta diz quantos preços por bloco", pc.meta.porBloco === 2);
+  t("meta diz onde cada bloco começa (para achar os itens que começam com a palavra)", JSON.stringify(pc.meta.inicios) === JSON.stringify(["caneta azul", "caneta preta", "clips", "papel a4 75g", "papel a4 90g"]), pc.meta.inicios);
+  const num = montarWeb(new Map([["x", { c: "x", o: "1", a: 2026, s: 1, mod: 6, num: "1", mun: "Nova",
+    it: [it(1, "Leite integral"), it(2, "1 - Leite desnatado"), it(3, "Açúcar"), it(4, "Requeijão com leite")] }]]), { corte: j.corte, hoje, porBloco: 2 });
+  t("'1 - Leite' fica junto com 'Leite' (a numeração não conta na ordem)", JSON.stringify(num.meta.inicios) === JSON.stringify(["acucar", "leite desnatado", "leite integral", "requeijao com leite"]), num.meta.inicios);
   const comum = montarWeb(new Map([["x", { c: "x", o: "1", a: 2026, s: 1, mod: 6, num: "1", mun: "Nova",
     it: [it(1, "Papel A4 75g"), it(2, "Papel A4 90g"), it(3, "Caneta azul"), it(4, "Caneta preta"), it(5, "Clips")] }]]), { corte: j.corte, hoje, porBloco: 2, limiteLinhas: 3 });
   t("palavra comum demais guarda só blocos e contagens", JSON.stringify(comum.porPrefixo.get("pap").papel) === JSON.stringify({ b: [3, 2, 4, 2] }) && JSON.stringify(comum.porPrefixo.get("cli").clips) === "[4,1]", [comum.porPrefixo.get("pap"), comum.porPrefixo.get("cli")]);

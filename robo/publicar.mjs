@@ -55,6 +55,10 @@ export function palavras(texto) {
   return norm(texto).split(/[^a-z0-9]+/).filter((p) => p.length >= 2 && !VAZIAS.has(p));
 }
 export const arqIndice = (p) => p.slice(0, 3);
+// Chave de ordem da base: a descrição sem acento, sem o que vem antes da
+// primeira letra ("1 - Leite", "- LEITE" ficam junto com "Leite")
+export const chaveOrdem = (n) => n.replace(/^[^a-z]+/, "") || n;
+const INICIO_TAM = 24;
 
 // Data de referência de uma contratação: o resultado mais recente
 function dataRef(r) {
@@ -100,7 +104,8 @@ export function montarWeb(base, { corte, hoje = hojeISO(), fila = 0, cursor = {}
       res.forEach(([forn, doc, qtd, v, d], k) => {
         const data = d || r.ab || r.pub || "";
         if (!(v > 0) || (data && data < corte)) return;
-        precos.push({ id: idPreco(`${r.c}#${n}#${k}`), desc, n: norm(desc), un: normUnidade(un), v, q: qtd != null ? qtd : qtdItem, d: data, r, forn, doc });
+        const nd = norm(desc);
+        precos.push({ id: idPreco(`${r.c}#${n}#${k}`), desc, n: chaveOrdem(nd), un: normUnidade(un), v, q: qtd != null ? qtd : qtdItem, d: data, r, forn, doc });
       });
     }
   }
@@ -145,10 +150,14 @@ export function montarWeb(base, { corte, hoje = hojeISO(), fila = 0, cursor = {}
   // {"ar": ".rmo"} = i/ar, i/arr, i/arm, i/aro ("." = o de duas letras)
   const prefixos = {};
   for (const k of [...porPrefixo.keys()].sort()) prefixos[k.slice(0, 2)] = (prefixos[k.slice(0, 2)] || "") + (k[2] || ".");
+  // onde cada bloco começa (a chave de ordem da 1ª linha, encurtada): como os
+  // blocos seguem a ordem da descrição, a tela acha os blocos dos itens que
+  // COMEÇAM com a palavra buscada e os baixa antes dos outros
+  const inicios = blocos.map((_, b) => precos[b * porBloco].n.slice(0, INICIO_TAM));
   const meta = {
     formato: FORMATO, geradoEm: new Date().toISOString(), hoje, uf: UF, meses: MESES, de: corte,
     precos: precos.length, contratacoes: base.size, blocos: blocos.length, porBloco, pendentes: fila,
-    municipios, unidades, modalidades: MODALIDADES, prefixos,
+    municipios, unidades, modalidades: MODALIDADES, prefixos, inicios,
     carga: Object.fromEntries(Object.entries(cursor.carga || {}).map(([m, c]) => [m, !!c.feita])),
   };
   return { meta, blocos, porPrefixo };
