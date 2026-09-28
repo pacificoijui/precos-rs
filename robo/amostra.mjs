@@ -8,7 +8,7 @@ import { readFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import vm from "node:vm";
 import { gravarJson, hojeISO, menosMeses, MESES } from "./comum.mjs";
-import { montarWeb } from "./publicar.mjs";
+import { montarWeb, nomeArqIndice } from "./publicar.mjs";
 
 const [origem, saida] = process.argv.slice(2);
 if (!origem || !saida) { console.error("uso: node robo/amostra.mjs <licitacoes.js> <pasta de saída>"); process.exit(1); }
@@ -44,6 +44,6 @@ const hoje = hojeISO();
 const { meta, blocos, porPrefixo } = montarWeb(base, { corte: menosMeses(hoje, MESES), hoje, porBloco: +process.env.POR_BLOCO || 400 });
 if (existsSync(saida)) rmSync(saida, { recursive: true });
 blocos.forEach((b, i) => gravarJson(join(saida, "b", i + ".json.gz"), b));
-for (const [k, m] of porPrefixo) gravarJson(join(saida, "i", k + ".json.gz"), m);
+for (const [k, m] of porPrefixo) gravarJson(join(saida, "i", nomeArqIndice(k) + ".json.gz"), m);
 gravarJson(join(saida, "meta.json"), meta);
 console.log(`${base.size} contratações, ${meta.precos} preços, ${blocos.length} blocos, ${porPrefixo.size} arquivos de índice, municípios: ${meta.municipios.join(", ")}`);

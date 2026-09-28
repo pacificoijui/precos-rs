@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { gravarJson, gravarLinhas, lerJson, hojeISO, menosMeses, idPreco, normUnidade, mascararDoc, limparNome, parteDe } from "./comum.mjs";
 import { serve, entradaDaFila } from "./listar.mjs";
 import { baixarContratacao, filaCompleta } from "./baixar.mjs";
-import { juntarEstado, montarWeb, palavras } from "./publicar.mjs";
+import { juntarEstado, montarWeb, palavras, nomeArqIndice } from "./publicar.mjs";
 
 let ok = 0, mau = 0;
 const t = (n, c, e) => { if (c) { ok++; console.log("  ✓", n); } else { mau++; console.log("  ✗", n, e !== undefined ? JSON.stringify(e) : ""); process.exitCode = 1; } };
@@ -90,6 +90,7 @@ try {
   t("índice com as linhas: 'papel' = linhas 6, 7, 8 e 9", JSON.stringify(pc.porPrefixo.get("pap").papel) === "[6,1,1,1]", pc.porPrefixo.get("pap"));
   t("palavra de duas letras fica no arquivo de duas ('a4' em i/a4)", JSON.stringify(pc.porPrefixo.get("a4").a4) === "[6,1,1,1]" && pc.meta.prefixos.a4 === ".", pc.meta.prefixos);
   t("meta diz quantos preços por bloco", pc.meta.porBloco === 2);
+  t("nomes proibidos no Windows ganham \"_\" (con, aux…), os outros não", nomeArqIndice("con") === "con_" && nomeArqIndice("aux") === "aux_" && nomeArqIndice("com") === "com" && nomeArqIndice("arr") === "arr");
   t("meta diz onde cada bloco começa (para achar os itens que começam com a palavra)", JSON.stringify(pc.meta.inicios) === JSON.stringify(["caneta azul", "caneta preta", "clips", "papel a4 75g", "papel a4 90g"]), pc.meta.inicios);
   const num = montarWeb(new Map([["x", { c: "x", o: "1", a: 2026, s: 1, mod: 6, num: "1", mun: "Nova",
     it: [it(1, "Leite integral"), it(2, "1 - Leite desnatado"), it(3, "Açúcar"), it(4, "Requeijão com leite")] }]]), { corte: j.corte, hoje, porBloco: 2 });

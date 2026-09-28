@@ -55,6 +55,11 @@ export function palavras(texto) {
   return norm(texto).split(/[^a-z0-9]+/).filter((p) => p.length >= 2 && !VAZIAS.has(p));
 }
 export const arqIndice = (p) => p.slice(0, 3);
+// Nome do arquivo de um prefixo. CON, PRN, AUX e NUL são nomes proibidos
+// no Windows (mesmo com extensão): quem clonar o ramo lá — ou o sistema de
+// Ijuí, que guarda uma amostra desta base nos testes — não consegue nem
+// fazer o checkout. Esses quatro ganham um "_".
+export const nomeArqIndice = (k) => (/^(con|prn|aux|nul)$/.test(k) ? k + "_" : k);
 // Chave de ordem da base: a descrição sem acento, sem o que vem antes da
 // primeira letra ("1 - Leite", "- LEITE" ficam junto com "Leite")
 export const chaveOrdem = (n) => n.replace(/^[^a-z]+/, "") || n;
@@ -181,7 +186,7 @@ async function main() {
   const dirW = join(RAIZ, "web");
   if (existsSync(dirW)) rmSync(dirW, { recursive: true });
   blocos.forEach((b, i) => gravarJson(join(dirW, "b", i + ".json.gz"), b));
-  for (const [k, m] of porPrefixo) gravarJson(join(dirW, "i", k + ".json.gz"), m);
+  for (const [k, m] of porPrefixo) gravarJson(join(dirW, "i", nomeArqIndice(k) + ".json.gz"), m);
   gravarJson(join(dirW, "meta.json"), meta);
   console.log(`Base: ${base.size} contratações (${novos} baixadas agora, ${podados} saíram por passar de ${MESES} meses), ${meta.precos} preços de ${meta.municipios.length} municípios, ${blocos.length} blocos; fila: ${fila.size}`);
 }

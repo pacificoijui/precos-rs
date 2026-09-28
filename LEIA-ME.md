@@ -29,7 +29,7 @@ O robô (`.github/workflows/robo.yml`) roda todo dia às 04:15 (Brasília):
 |---|---|
 | `web/meta.json` | resumo: total de preços, municípios, período, unidades, fila pendente, arquivos do índice |
 | `web/b/N.json.gz` | blocos de ~1.000 preços em ordem de descrição |
-| `web/i/XXX.json.gz` | índice: palavra → `[bloco, quantos preços do bloco têm a palavra, …]` (por prefixo de 3 letras; palavra de 2 letras no arquivo de 2) |
+| `web/i/XXX.json.gz` | índice: palavra → linhas em que aparece (a primeira, depois as distâncias), por prefixo de 3 letras; palavra de 2 letras no arquivo de 2. `con`, `prn`, `aux` e `nul` ganham `_` no nome (proibidos no Windows) |
 | `estado/` | o que o robô precisa para continuar (contratações baixadas, fila, cursor) |
 
 A tela lê direto de `https://raw.githubusercontent.com/pacificoijui/precos-rs/dados/web/`:
