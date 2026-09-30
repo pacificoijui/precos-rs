@@ -44,6 +44,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: node robo/teste-processos.mjs
+      - name: O PNCP responde daqui?
+        continue-on-error: true
+        run: |
+          U="https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao?dataInicial=$(date -d '-7 days' +%Y%m%d)&dataFinal=$(date +%Y%m%d)&codigoModalidadeContratacao=8&uf=RS&pagina=1&tamanhoPagina=10"
+          curl -sS -m 60 -o /dev/null -w "curl: HTTP %{http_code} de %{remote_ip} em %{time_total}s\n" "$U" || echo "curl falhou"
+          node -e 'fetch(process.argv[1],{signal:AbortSignal.timeout(60000)}).then(r=>console.log("node: HTTP",r.status)).catch(e=>console.log("node falhou:",e.message,e.cause&&(e.cause.code||e.cause.message)))' "$U"
       - name: Estado atual (ramo processos)
         run: |
           mkdir -p proc-estado

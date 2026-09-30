@@ -104,7 +104,7 @@ async function listar() {
   }
   cursor.pendente = MODS_PROC.some((m) => !(cursor.mods[m] && cursor.mods[m].feita));
   salvar();
-  console.log(`[${uf}] fim: ${mapa.size} contratações (${mapa.size - antes >= 0 ? "+" : ""}${mapa.size - antes}); ${stats.chamadas} chamadas, ${stats.erros429}×429, ${minutos()} min${cursor.pendente ? " — carga inicial continua na próxima rodada" : ""}`);
+  console.log(`[${uf}] fim: ${mapa.size} contratações (${mapa.size - antes >= 0 ? "+" : ""}${mapa.size - antes}); ${stats.chamadas} chamadas, ${stats.erros429}×429, ${stats.pelaCurl} pelo curl, ${minutos()} min${cursor.pendente ? " — carga inicial continua na próxima rodada" : ""}`);
 }
 
 // Agrupa por mês de publicação e monta o que a tela lê

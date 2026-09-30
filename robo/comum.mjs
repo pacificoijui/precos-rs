@@ -3,6 +3,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { gzipSync, gunzipSync } from "node:zlib";
 import { dirname, join } from "node:path";
+import { execFile } from "node:child_process";
 
 export const CONSULTA = "https://pncp.gov.br/api/consulta/v1";
 export const API = "https://pncp.gov.br/api/pncp/v1";
@@ -42,7 +43,7 @@ const SIMULTANEAS = +process.env.SIMULTANEAS || 8;
 let intervalo = +process.env.INTERVALO_MS || 150;
 let ativas = 0, ultimaSaida = 0;
 const esperando = [];
-export const stats = { chamadas: 0, erros429: 0, falhas: 0 };
+export const stats = { chamadas: 0, erros429: 0, falhas: 0, pelaCurl: 0 };
 async function vaga() {
   if (ativas >= SIMULTANEAS) await new Promise((ok) => esperando.push(ok));
   else ativas++;
@@ -52,17 +53,41 @@ async function vaga() {
 }
 function libera() { const p = esperando.shift(); if (p) p(); else ativas--; }
 
+let avisouCausa = false;
+function pelaCurl(url) {
+  return new Promise((ok, falha) => {
+    execFile("curl", ["-sS", "--compressed", "-m", "90", "-H", "accept: application/json", "-w", "\n%{http_code}", url],
+      { maxBuffer: 256 * 1024 * 1024 }, (erro, saida) => {
+        if (erro) return falha(erro);
+        const i = saida.lastIndexOf("\n"), status = +saida.slice(i + 1);
+        if (!status) return falha(new Error("curl sem resposta"));
+        ok({ status, ok: status >= 200 && status < 300, corpo: saida.slice(0, i) });
+      });
+  });
+}
+
 export async function get(url, { tentativas = 7 } = {}) {
   for (let i = 0; ; i++) {
     await vaga();
     let r, t;
     try {
       stats.chamadas++;
-      r = await fetch(url, { headers: { accept: "application/json" }, signal: AbortSignal.timeout(90_000) });
-      t = await r.text();
+      try {
+        r = await fetch(url, { headers: { accept: "application/json" }, signal: AbortSignal.timeout(90_000) });
+        t = await r.text();
+      } catch (e) {
+        // "fetch failed" sem resposta (rede, TLS do servidor…): tenta pelo curl,
+        // que tem outra pilha de rede e de certificados
+        const c = await pelaCurl(url).catch(() => null);
+        if (!c) throw e;
+        stats.pelaCurl++;
+        r = c; t = c.corpo;
+      }
     } catch (e) {
       libera();
-      if (i >= tentativas) { stats.falhas++; throw new Error(`${url}: ${e.message}`); }
+      const causa = e.cause ? ` (${e.cause.code || e.cause.message || e.cause})` : "";
+      if (i >= tentativas) { stats.falhas++; throw new Error(`${url}: ${e.message}${causa}`); }
+      if (i === 0 && !avisouCausa) { avisouCausa = true; console.log(`aviso: ${e.message}${causa} — repetindo`); }
       await esperar(2000 * 2 ** Math.min(i, 5));
       continue;
     }
