@@ -1,0 +1,70 @@
+{
+ "mods": {
+  "1": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "2": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "3": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "4": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "5": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "6": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "7": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "8": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "9": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "10": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "11": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "12": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  },
+  "13": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-09-30"
+  }
+ },
+ "pendente": false
+}
