@@ -55,3 +55,34 @@ node robo/publicar.mjs                            # monta estado/ e web/
 
 Variáveis: `MESES` (24), `UF` (RS), `ORCAMENTO_MIN` (minutos por rodada),
 `SIMULTANEAS` e `INTERVALO_MS` (ritmo das chamadas ao PNCP).
+
+## Processos da Região Sul (ramo `processos`)
+
+Um segundo robô (`.github/workflows/processos.yml`, `robo/processos.mjs`)
+monta a base de **processos** — as contratações, sem itens — de **PR, SC e
+RS**, de todas as esferas e modalidades, dos **últimos 12 meses**. É o que a
+tela do PNCP de Ijuí lê nas camadas **Região Sul** e **Rio Grande do Sul**
+(Ijuí continua com a base própria, com itens e vencedores). Os itens de um
+processo de outro órgão a tela busca no PNCP na hora, quando alguém o abre.
+
+Roda todo dia às 03:40 (e a cada 4 h enquanto a carga inicial não termina),
+com uma máquina por UF. Grava no ramo `processos`, num commit só:
+
+| | |
+|---|---|
+| `web/meta.json` | por UF: total, carga pendente e quantos processos em cada mês |
+| `web/UF/AAAA-MM.json.gz` | os processos publicados naquele mês, mais recentes primeiro |
+| `estado/` | o que o robô precisa para continuar (todas as contratações e o cursor de cada modalidade) |
+
+Registro: `c` controle PNCP, `o` CNPJ do órgão, `a` ano, `s` sequencial,
+`m` modalidade, `n` nº, `p` processo, `ob` objeto, `pu`/`ab`/`en` publicação,
+abertura e encerramento, `uf`, `mu` município, `ib` IBGE, `or` órgão, `un`
+unidade, `es` esfera, `ve`/`vh` estimado e homologado, `si` situação (1
+divulgada, 2 revogada, 3 anulada, 4 suspensa), `sr` registro de preços, `li`
+link do sistema de origem, `am` amparo legal, `di` modo de disputa.
+
+```bash
+node robo/teste-processos.mjs          # teste sem internet
+UF=RS node robo/processos.mjs listar   # lista o RS (grava trab/)
+node robo/processos.mjs publicar       # monta proc-web/ e proc-estado/
+```
