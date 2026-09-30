@@ -14,8 +14,8 @@ name: Robô — processos da Região Sul
 # houver carga pendente) continua de onde parou.
 on:
   schedule:
-    - cron: "40 6 * * *"      # todo dia, 03:40 em Brasília
-    - cron: "10 2-22/4 * * *" # a cada 4 h, só enquanto a carga inicial não termina
+    - cron: "40 10 * * *"      # todo dia, 07:40 em Brasília (de madrugada o PNCP recusa o GitHub)
+    - cron: "10 11-23/4 * * *" # 8h, 12h, 16h e 20h em Brasília, só enquanto a carga inicial não termina
   workflow_dispatch:
     inputs:
       orcamento:
@@ -57,7 +57,7 @@ jobs:
       - name: Há trabalho?
         id: p
         run: |
-          if [ "${{ github.event.schedule }}" = "10 2-22/4 * * *" ] && node -e '
+          if [ "${{ github.event.schedule }}" = "10 11-23/4 * * *" ] && node -e '
             const fs=require("fs");const p=["RS","SC","PR"].some(u=>{try{return JSON.parse(fs.readFileSync("proc-estado/cursor-"+u+".json","utf8")).pendente!==false}catch(e){return true}});
             process.exit(p?1:0)'; then
             echo "Carga completa — a rodada extra não tem o que fazer."; echo "pular=1" >> "$GITHUB_OUTPUT"

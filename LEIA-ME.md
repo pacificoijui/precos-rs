@@ -11,7 +11,7 @@ mascarado (`***.456.789-**`), como no site do PNCP.
 
 ## Como funciona
 
-O robô (`.github/workflows/robo.yml`) roda todo dia às 04:15 (Brasília):
+O robô (`.github/workflows/robo.yml`) roda todo dia às 08:15 (Brasília; de madrugada o PNCP recusa as máquinas do GitHub):
 
 1. **listar** (uma máquina por modalidade): pergunta ao PNCP o que é novo ou
    mudou. Na carga inicial, lê os 24 meses mês a mês.
@@ -65,7 +65,7 @@ tela do PNCP de Ijuí lê nas camadas **Região Sul** e **Rio Grande do Sul**
 (Ijuí continua com a base própria, com itens e vencedores). Os itens de um
 processo de outro órgão a tela busca no PNCP na hora, quando alguém o abre.
 
-Roda todo dia às 03:40 (e a cada 4 h enquanto a carga inicial não termina),
+Roda todo dia às 07:40 (e às 8h, 12h, 16h e 20h enquanto a carga inicial não termina — de madrugada o PNCP recusa as máquinas do GitHub),
 com uma máquina por UF. Grava no ramo `processos`, num commit só:
 
 | | |

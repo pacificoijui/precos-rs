@@ -17,8 +17,8 @@ name: Robô — preços dos municípios do RS
 # do PNCP, só remonta web/ a partir do estado guardado (poucos minutos).
 on:
   schedule:
-    - cron: "15 7 * * *"      # todo dia, 04:15 em Brasília
-    - cron: "45 1-23/4 * * *" # a cada 4 h, só se ainda houver carga pendente
+    - cron: "15 11 * * *"      # todo dia, 08:15 em Brasília (de madrugada o PNCP recusa o GitHub)
+    - cron: "45 13-23/4 * * *" # 10h45, 14h45 e 18h45 em Brasília, só se ainda houver carga pendente
   workflow_dispatch:
     inputs:
       orcamento:
@@ -70,7 +70,7 @@ jobs:
       - name: Há trabalho?
         id: p
         run: |
-          if [ "${{ github.event.schedule }}" = "45 1-23/4 * * *" ] && node --input-type=module -e '
+          if [ "${{ github.event.schedule }}" = "45 13-23/4 * * *" ] && node --input-type=module -e '
             const {lerJson}=await import("./robo/comum.mjs");
             const c=lerJson("estado/cursor.json",{}), f=lerJson("estado/fila.json.gz",[]);
             const feitas=[6,8,4,9,7,5,12].every(m=>c.carga&&c.carga[m]&&c.carga[m].feita);
