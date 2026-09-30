@@ -33,5 +33,5 @@ jobs:
       uf: RS
       ramo: dados
       cron_extra: "45 13-23/4 * * *"
-      orcamento: ${{ inputs.orcamento || 300 }}
+      orcamento: ${{ fromJSON(inputs.orcamento || 300) }}
       so_publicar: ${{ github.event_name == 'push' || inputs.so_publicar == true }}
