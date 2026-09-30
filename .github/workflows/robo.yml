@@ -1,20 +1,6 @@
 name: Robô — preços dos municípios do RS
 
-# Monta a base de preços homologados dos municípios do RS publicados no PNCP
-# (últimos 24 meses) que a Pesquisa de Preços de Ijuí lê.
-#
-#   listar   — uma máquina por modalidade: descobre o que é novo ou mudou
-#   baixar   — 16 máquinas em paralelo (cada uma com o seu endereço; o limite
-#              de requisições do PNCP é por endereço) baixam itens e resultados
-#   publicar — junta tudo, tira o que passou de 24 meses, monta a base e
-#              grava no ramo "dados" (sempre um commit só: o histórico não
-#              incha com uma base que muda todo dia)
-#
-# A carga inicial não cabe numa rodada: o que faltar fica na fila e a rodada
-# seguinte (a cada 4 h enquanto houver fila) continua de onde parou.
-#
-# Mudança no código do robô (push) ou "só publicar" na mão: não baixa nada
-# do PNCP, só remonta web/ a partir do estado guardado (poucos minutos).
+# Chama o robô de uma UF (robo-uf.yml) para RS: base no ramo "dados".
 on:
   schedule:
     - cron: "15 11 * * *"      # todo dia, 08:15 em Brasília (de madrugada o PNCP recusa o GitHub)
@@ -31,151 +17,21 @@ on:
         default: false
   push:
     branches: [main]
-    paths: ["robo/**", ".github/workflows/robo.yml"]
+    paths: ["robo/**", ".github/workflows/robo.yml", ".github/workflows/robo-uf.yml"]
 
 permissions:
   contents: write
 
 concurrency:
-  group: robo
+  group: robo-rs
   cancel-in-progress: false
 
-env:
-  PARTES: 16
-
 jobs:
-  teste:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: node robo/teste.mjs
-
-  preparar:
-    needs: teste
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    outputs:
-      pular: ${{ steps.p.outputs.pular }}
-      so_publicar: ${{ (github.event_name == 'push' || inputs.so_publicar) && '1' || '' }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - name: Estado atual (ramo dados)
-        run: |
-          git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || echo "Sem estado ainda: primeira carga."
-      - name: Há trabalho?
-        id: p
-        run: |
-          if [ "${{ github.event.schedule }}" = "45 13-23/4 * * *" ] && node --input-type=module -e '
-            const {lerJson}=await import("./robo/comum.mjs");
-            const c=lerJson("estado/cursor.json",{}), f=lerJson("estado/fila.json.gz",[]);
-            const feitas=[6,8,4,9,7,5,12].every(m=>c.carga&&c.carga[m]&&c.carga[m].feita);
-            process.exit(feitas&&!f.length?0:1)'; then
-            echo "Carga completa — a rodada extra não tem o que fazer."; echo "pular=1" >> "$GITHUB_OUTPUT"
-          fi
-
-  listar:
-    needs: preparar
-    if: needs.preparar.outputs.pular != '1' && needs.preparar.outputs.so_publicar != '1'
-    runs-on: ubuntu-latest
-    timeout-minutes: 150
-    strategy:
-      fail-fast: false
-      matrix:
-        mod: [6, 8, 4, 9, 7, 5, 12]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: |
-          git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || true
-      - name: Listar modalidade ${{ matrix.mod }}
-        run: node robo/listar.mjs
-        env:
-          MOD: ${{ matrix.mod }}
-          ORCAMENTO_MIN: 120
-          SIMULTANEAS: 2
-          INTERVALO_MS: 400
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: lista-${{ matrix.mod }}
-          path: trab/lista-${{ matrix.mod }}.json
-          retention-days: 3
-          if-no-files-found: ignore
-
-  baixar:
-    needs: [preparar, listar]
-    if: always() && needs.preparar.outputs.pular != '1' && needs.preparar.outputs.so_publicar != '1' && needs.preparar.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 340
-    strategy:
-      fail-fast: false
-      matrix:
-        parte: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: |
-          git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || true
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          pattern: lista-*
-          path: trab
-          merge-multiple: true
-      - name: Baixar parte ${{ matrix.parte }}
-        # folga antes do limite do job: se estourar, o último ponto de
-        # salvamento (a cada 10 min) ainda sobe no passo seguinte
-        timeout-minutes: 320
-        run: node robo/baixar.mjs
-        env:
-          PARTE: ${{ matrix.parte }}
-          ORCAMENTO_MIN: ${{ inputs.orcamento || 300 }}
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: baixado-${{ matrix.parte }}
-          path: trab/baixado-${{ matrix.parte }}.ndjson.gz
-          retention-days: 3
-          if-no-files-found: ignore
-
-  publicar:
-    needs: [preparar, listar, baixar]
-    if: always() && needs.preparar.outputs.pular != '1' && needs.preparar.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: |
-          git fetch --depth=1 origin dados && git checkout FETCH_HEAD -- estado || true
-      - uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          path: trab
-          merge-multiple: true
-      - name: Juntar e montar a base
-        run: node robo/publicar.mjs
-      - name: Gravar no ramo dados (um commit só)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          test -f web/meta.json
-          rm -rf /tmp/pub && mkdir /tmp/pub && cp -r estado web /tmp/pub/
-          cp LEIA-ME.md /tmp/pub/ 2>/dev/null || true
-          cd /tmp/pub
-          git init -q -b dados
-          git config user.name "Robô de preços do RS"
-          git config user.email "actions@users.noreply.github.com"
-          git add -A
-          git commit -q -m "Base de $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"
-          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" dados
-          node -e 'const m=require("./web/meta.json");console.log(`Publicado: ${m.precos} preços, ${m.municipios.length} municípios, fila ${m.pendentes}`)'
+  robo:
+    uses: ./.github/workflows/robo-uf.yml
+    with:
+      uf: RS
+      ramo: dados
+      cron_extra: "45 13-23/4 * * *"
+      orcamento: ${{ inputs.orcamento || 300 }}
+      so_publicar: ${{ github.event_name == 'push' || inputs.so_publicar == true }}

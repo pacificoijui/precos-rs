@@ -1,0 +1,34 @@
+name: Robô — preços dos municípios do PR
+
+# Chama o robô de uma UF (robo-uf.yml) para PR: base no ramo "dados-pr".
+on:
+  schedule:
+    - cron: "55 11 * * *"      # todo dia, 08:55 em Brasília
+    - cron: "25 14-22/4 * * *" # 11h25, 15h25 e 19h25 em Brasília, só se ainda houver carga pendente
+  workflow_dispatch:
+    inputs:
+      orcamento:
+        description: "Minutos de trabalho de cada máquina que baixa"
+        type: number
+        default: 300
+      so_publicar:
+        description: "Só remontar a base a partir do estado (sem baixar do PNCP)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: robo-pr
+  cancel-in-progress: false
+
+jobs:
+  robo:
+    uses: ./.github/workflows/robo-uf.yml
+    with:
+      uf: PR
+      ramo: dados-pr
+      cron_extra: "25 14-22/4 * * *"
+      orcamento: ${{ inputs.orcamento || 300 }}
+      so_publicar: ${{ inputs.so_publicar == true }}
