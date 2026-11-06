@@ -1,0 +1,40 @@
+{
+ "carga": {
+  "4": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-11-06"
+  },
+  "5": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-11-06"
+  },
+  "6": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-11-06"
+  },
+  "7": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-11-06"
+  },
+  "8": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-11-06"
+  },
+  "9": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-11-06"
+  },
+  "12": {
+   "proximo": "2026-10-01",
+   "feita": true,
+   "listadoAte": "2026-11-06"
+  }
+ },
+ "atualizadoEm": "2026-11-06T18:44:14.641Z"
+}
